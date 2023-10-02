@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { Inter, Questrial } from "next/font/google";
+import { Inter } from "next/font/google";
 
 // If loading a variable font, you don't need to specify the font weight
 const inter = Inter({ subsets: ["latin"] });
@@ -14,22 +14,12 @@ interface CountryData {
 export default function Home() {
   const [userInput, setUserInput] = useState<string>("");
   const [countries, setCountries] = useState<string[]>([]);
+  const [userTyping, setUserTyping] = useState<boolean>(false);
   const [filteredCountries, setFilteredCountries] = useState<React.ReactNode[]>(
     []
   );
 
   function highlightMatchedText(text: string, query: string): React.ReactNode {
-    if (!query) {
-      return (
-        <li
-          onClick={() => {
-            setUserInput(text);
-          }}
-        >
-          {text}
-        </li>
-      );
-    }
     const regex = new RegExp(`(\\b${query})`, "gi");
     const parts = text.split(regex);
 
@@ -39,13 +29,15 @@ export default function Home() {
           setUserInput(text);
         }}
       >
-        {parts.map((part, index) =>
-          regex.test(part) ? (
-            <mark key={index}>{part}</mark>
-          ) : (
-            <span key={index}>{part}</span>
-          )
-        )}
+        {query
+          ? parts.map((part, index) =>
+              regex.test(part) ? (
+                <mark key={index}>{part}</mark>
+              ) : (
+                <span key={index}>{part}</span>
+              )
+            )
+          : text}
       </li>
     );
   }
@@ -55,7 +47,9 @@ export default function Home() {
     fetch("https://restcountries.com/v3.1/all")
       .then((response) => response.json())
       .then((data: CountryData[]) => {
-        const countryNames = data.map((country) => country.name.common);
+        const countryNames = data
+          .map((country) => country.name.common)
+          .sort((a, b) => -b.localeCompare(a));
         setCountries(countryNames);
       })
       .catch((error) => {
@@ -66,30 +60,34 @@ export default function Home() {
   useEffect(() => {
     const userInputProcessed = userInput.toLowerCase().trim();
 
-    // Filter countries based on user input and build highlighted text
-    const filtered = countries.filter((country) => {
-      const words = country.split(" ");
-      return words.some((word) =>
-        word.toLowerCase().startsWith(userInputProcessed)
-      );
-    });
+    const primaryResults: string[] = [];
+    const secondaryResults: string[] = [];
 
-    const sortedFilteredCountries = filtered.sort((a, b) => {
-      if (
-        a.toLowerCase().startsWith(userInputProcessed) &&
-        !b.toLowerCase().startsWith(userInputProcessed)
-      ) {
-        return -1; // Place 'a' before 'b' if 'a' matches the input and 'b' doesn't
-      } else if (
-        !a.toLowerCase().startsWith(userInputProcessed) &&
-        b.toLowerCase().startsWith(userInputProcessed)
-      ) {
-        return 1; // Place 'b' before 'a' if 'b' matches the input and 'a' doesn't
+    for (const el of countries) {
+      if (el.toLowerCase().trim().startsWith(userInputProcessed)) {
+        primaryResults.push(el);
+      } else {
+        // Split the input string into words
+        const words = el.split(/\s+/);
+
+        // Iterate through words, starting from the second word (index 1)
+        for (let i = 1; i < words.length; i++) {
+          const word = words[i].toLowerCase();
+
+          // Check if the word starts with the prefix
+          if (word.startsWith(userInputProcessed)) {
+            secondaryResults.push(el);
+            break;
+          }
+        }
       }
-      return 0; // Leave the order unchanged if both or neither match
-    });
+    }
 
-    const filteredElements = sortedFilteredCountries.map((country) =>
+    console.log(primaryResults);
+
+    const results = [...primaryResults, ...secondaryResults];
+
+    const filteredElements = results.map((country) =>
       highlightMatchedText(country, userInputProcessed)
     );
     setFilteredCountries(filteredElements);
@@ -108,8 +106,14 @@ export default function Home() {
           placeholder="Search for a country..."
           value={userInput}
           onChange={handleInputChange}
+          onFocus={() => {
+            setUserTyping(true);
+          }}
+          onBlur={() => {
+            setUserTyping(false);
+          }}
         />
-        <div className="suggestionsList">
+        <div className={`suggestionsList ${userTyping ? "show" : ""}`}>
           <ul className="inner">
             {filteredCountries.map((country, index) => (
               <>{country}</>
