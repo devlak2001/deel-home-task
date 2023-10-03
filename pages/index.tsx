@@ -19,6 +19,7 @@ export default function Home() {
     []
   );
 
+  // Highlighting text that matches the query
   function highlightMatchedText(text: string, query: string): React.ReactNode {
     const regex = new RegExp(`(\\b${query})`, "gi");
     const parts = text.split(regex);
@@ -47,6 +48,7 @@ export default function Home() {
     fetch("https://restcountries.com/v3.1/all")
       .then((response) => response.json())
       .then((data: CountryData[]) => {
+        // Take the names of the countries and sort them alphabetically
         const countryNames = data
           .map((country) => country.name.common)
           .sort((a, b) => -b.localeCompare(a));
@@ -74,7 +76,7 @@ export default function Home() {
         for (let i = 1; i < words.length; i++) {
           const word = words[i].toLowerCase();
 
-          // Check if the word starts with the prefix
+          // Check if the word starts with the user input string
           if (word.startsWith(userInputProcessed)) {
             secondaryResults.push(el);
             break;
