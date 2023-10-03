@@ -44,7 +44,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Fetch the list of countries from an API (e.g., Restcountries)
+    // Fetch the list of countries from Restcountries
     fetch("https://restcountries.com/v3.1/all")
       .then((response) => response.json())
       .then((data: CountryData[]) => {
@@ -60,13 +60,17 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    /* Removing any unnecessary whitespace and converting text to lowercase. 
+    We are also converting country names to lower-case so it is easy for us to compare 
+    if the user input and name of the country match. */
+
     const userInputProcessed = userInput.toLowerCase().trim();
 
     const primaryResults: string[] = [];
     const secondaryResults: string[] = [];
 
     for (const el of countries) {
-      if (el.toLowerCase().trim().startsWith(userInputProcessed)) {
+      if (el.toLowerCase().startsWith(userInputProcessed)) {
         primaryResults.push(el);
       } else {
         // Split the input string into words
@@ -112,7 +116,9 @@ export default function Home() {
             setUserTyping(true);
           }}
           onBlur={() => {
-            setUserTyping(false);
+            setTimeout(() => {
+              setUserTyping(false);
+            }, 100);
           }}
         />
         <div className={`suggestionsList ${userTyping ? "show" : ""}`}>
